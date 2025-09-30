@@ -17,6 +17,7 @@ public class Input {
     private String name;
     private Integer age;
     private String image;
+    private String imagePath;
     private String result;
     private Double confidence;
     private Double cancerProbability;
@@ -54,6 +55,14 @@ public class Input {
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     public String getResult() {

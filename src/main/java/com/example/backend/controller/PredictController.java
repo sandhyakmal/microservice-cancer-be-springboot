@@ -28,6 +28,11 @@ public class PredictController {
         return predictServices.getAllData();
     }
 
+    @GetMapping("/history-detail/{id}")
+    public ResponseEntity<Input> getById(@PathVariable Long id) {
+        return predictServices.getHistoryById(id);
+    }
+
     @PostMapping(value = "/predict", consumes = {"multipart/form-data"})
     public ResponseEntity<ClassificationResponse> predict(
             @RequestParam("file") MultipartFile file,

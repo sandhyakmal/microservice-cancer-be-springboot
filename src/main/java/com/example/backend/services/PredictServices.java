@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @Service
@@ -36,8 +38,32 @@ public class PredictServices {
     @Value("${url.predict}")
     private String urlPredict;
 
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
+
     public List<Input> getAllData() {
         return classificationRepo.findAll();
+    }
+
+    public ResponseEntity<Input> getHistoryById(Long id) {
+        try {
+            Optional<Input> inputOpt = classificationRepo.findById(id);
+
+            if (inputOpt.isPresent()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                String databyID = objectMapper
+                        .writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(inputOpt.get());
+                LOGGER.info("Input Opt JSON: \n" + databyID);
+
+                return ResponseEntity.ok(inputOpt.get());
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     public ClassificationResponse predict(String name, int age, String imageDate, MultipartFile file) throws IOException {
@@ -45,23 +71,23 @@ public class PredictServices {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File tidak boleh kosong");
         }
-        
-        // Buat direktori upload jika belum ada
-        String uploadDir = System.getProperty("user.dir") + "/uploads/";
+
         File directory = new File(uploadDir);
         if (!directory.exists() && !directory.mkdirs()) {
-            throw new IOException("Gagal membuat direktori upload: " + uploadDir);
+            throw new IOException("Gagal membuat direktori upload: " + directory.getAbsolutePath());
         }
 
-        // Bersihkan nama file
         String originalFilename = file.getOriginalFilename();
-        String cleanFileName = originalFilename != null ? 
-            originalFilename.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : 
-            "uploaded_file_" + System.currentTimeMillis();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
 
-        // Simpan file
-        File savedFile = new File(uploadDir + cleanFileName);
-        file.transferTo(savedFile);
+        String cleanFileName = UUID.randomUUID().toString() + extension;
+
+        File savedFile = new File(directory, cleanFileName);
+        LOGGER.info("Menyimpan file di: " + savedFile.getAbsolutePath());
+        file.transferTo(new File(savedFile.getAbsolutePath()));
 
         try {
             // Siapkan request ke API prediksi
@@ -107,6 +133,7 @@ public class PredictServices {
             input.setName(name);
             input.setAge(age);
             input.setImage(cleanFileName);
+            input.setImagePath(uploadDir + cleanFileName);
             input.setResult(result.getPredictedClass());
             input.setConfidence(result.getConfidence());
             input.setDateInput(tanggalInput);
