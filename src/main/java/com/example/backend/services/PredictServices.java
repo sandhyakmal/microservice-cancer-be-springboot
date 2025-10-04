@@ -102,7 +102,7 @@ public class PredictServices {
 
             // Panggil API prediksi
             ResponseEntity<ClassificationResponse> response = restTemplate.exchange(
-                    urlPredict,
+                    urlPredict + "/predict",
                     HttpMethod.POST,
                     requestEntity,
                     ClassificationResponse.class
