@@ -46,24 +46,8 @@ public class PredictServices {
         return classificationRepo.findAll();
     }
 
-    public ResponseEntity<Input> getHistoryById(Long id) {
-        try {
-            Optional<Input> inputOpt = classificationRepo.findById(id);
-
-            if (inputOpt.isPresent()) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                String databyID = objectMapper
-                        .writerWithDefaultPrettyPrinter()
-                        .writeValueAsString(inputOpt.get());
-                LOGGER.info("Input Opt JSON: \n" + databyID);
-
-                return ResponseEntity.ok(inputOpt.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    public Input getHistoryById(Long id) {
+            return classificationRepo.findById(id).orElse(null);
     }
 
     public ClassificationResponse predict(String name, int age, String imageDate, MultipartFile file) throws IOException {

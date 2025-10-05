@@ -4,7 +4,14 @@ import com.example.backend.entity.ClassificationResponse;
 import com.example.backend.entity.Input;
 import com.example.backend.repository.ClassificationRepo;
 import com.example.backend.services.PredictServices;
+import com.example.backend.utils.ApiResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,13 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api")
 public class PredictController {
 
-    private static final Logger LOGGER = Logger.getLogger(PredictController.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(PredictController.class);
+
 
     @Autowired
     private PredictServices predictServices;
@@ -28,10 +35,69 @@ public class PredictController {
         return predictServices.getAllData();
     }
 
+    @GetMapping("/v2/history")
+    public ResponseEntity<ApiResponse<List<Input>>> v2GetAllHistory() {
+        try {
+            List<Input> input = predictServices.getAllData();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            String apiResponseJson = objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(input);
+
+            LOGGER.info("Data Input: {}", apiResponseJson);
+
+            if (input == null || input.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(404, "Data tidak ditemukan"));
+            }
+
+            return ResponseEntity
+                    .ok(ApiResponse.success(input, "Data berhasil diambil"));
+
+        } catch (Exception e) {
+            LOGGER.error("Terjadi kesalahan saat mengambil data history: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Terjadi kesalahan server: " + e.getMessage()));
+        }
+    }
+
+
+
     @GetMapping("/history-detail/{id}")
-    public ResponseEntity<Input> getById(@PathVariable Long id) {
+    public Input getById(@PathVariable Long id) {
         return predictServices.getHistoryById(id);
     }
+
+    @GetMapping("/v2/history-detail/{id}")
+    public ResponseEntity<ApiResponse<Input>> v2getById(@PathVariable Long id) {
+
+        try{
+            Input input = predictServices.getHistoryById(id);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            String apiResponseJson = objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(input);
+
+            LOGGER.info("Data Input by ID: {}", apiResponseJson);
+
+            if (input == null) {
+                return ResponseEntity.ok(ApiResponse.error(404,"Data tidak ditemukan"));
+            }
+            return ResponseEntity.ok(ApiResponse.success(input, "Data berhasil diambil"));
+
+        } catch (Exception e){
+            LOGGER.error("Terjadi kesalahan saat mengambil data history: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Terjadi kesalahan server: " + e.getMessage()));
+        }
+    }
+
+
 
     @PostMapping(value = "/predict", consumes = {"multipart/form-data"})
     public ResponseEntity<ClassificationResponse> predict(
@@ -45,7 +111,7 @@ public class PredictController {
             ClassificationResponse response = predictServices.predict(name, age, imageDate, file);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            LOGGER.severe("Error  " + e.getMessage());
+            LOGGER.error("Error  " + e.getMessage());
             throw e;
         }
 
