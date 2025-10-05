@@ -73,7 +73,6 @@ public class PredictController {
 
     @GetMapping("/v2/history-detail/{id}")
     public ResponseEntity<ApiResponse<Input>> v2getById(@PathVariable Long id) {
-
         try{
             Input input = predictServices.getHistoryById(id);
 
@@ -117,5 +116,23 @@ public class PredictController {
 
 
     }
+
+    @PostMapping(value = "/v2/predict", consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponse<?>> V2Predict(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("name") String name,
+            @RequestParam("age") int age,
+            @RequestParam("imageDate") String imageDate
+    ) throws IOException {
+
+        ApiResponse<ClassificationResponse> response = predictServices.predictv2(name, age, imageDate, file);
+
+        if ("Success".equalsIgnoreCase(response.getStatus())) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
 
 }
