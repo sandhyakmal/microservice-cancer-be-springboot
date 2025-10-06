@@ -189,6 +189,7 @@ public class PredictServices {
 
             HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
+
             ResponseEntity<ClassificationResponse> response = restTemplate.exchange(
                     urlPredict + "/predict",
                     HttpMethod.POST,
@@ -237,7 +238,7 @@ public class PredictServices {
             if (savedFile.exists()) savedFile.delete();
             String detailMsg = e.getResponseBodyAsString();
             LOGGER.warning("Validasi gagal dari FastAPI: " + detailMsg);
-            return ApiResponse.error(400, "FastAPI menolak gambar bukan Grayscale ");
+            return ApiResponse.error(400, "Gambar yang diupload bukan Grayscale  / L");
 
         } catch (Exception e) {
 
